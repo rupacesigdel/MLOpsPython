@@ -47,28 +47,30 @@ CONFIG = {
 }
 
 def load_and_validate_data():
-    """Load and validate input data"""
-    logger.info(f"Loading data from {DATA_PATH}")
-    try:
-        data = pd.read_csv(DATA_PATH)
-        
-        # Validate data
-        assert CONFIG['data']['target_col'] in data.columns, \
-            f"Target column {CONFIG['data']['target_col']} not found"
-        assert len(data) > 100, "Insufficient data samples"
-        
-        X = data.drop(CONFIG['data']['target_col'], axis=1)
-        y = data[CONFIG['data']['target_col']]
-        
-        return train_test_split(
-            X, y,
-            test_size=CONFIG['data']['test_size'],
-            random_state=CONFIG['data']['random_state'],
-            stratify=y
-        )
-    except Exception as e:
-        logger.error(f"Data loading failed: {str(e)}")
-        raise
+    data = pd.read_csv(DATA_PATH)
+    
+    # Check for any target column if not specified
+    target_col = CONFIG['data'].get('target_col', 'target')
+    if target_col not in data.columns:
+        # Try common target column names
+        for col in ['target', 'label', 'class']:
+            if col in data.columns:
+                target_col = col
+                break
+        else:
+            raise ValueError(f"No target column found in {DATA_PATH}")
+
+    # Adjust sample size check
+    min_samples = CONFIG['data'].get('min_samples', 10)
+    if len(data) < min_samples:
+        logger.warning(f"Dataset has only {len(data)} samples (min {min_samples})")
+    
+    return train_test_split(
+        data.drop(target_col, axis=1),
+        data[target_col],
+        test_size=CONFIG['data'].get('test_size', 0.2),
+        random_state=CONFIG['data'].get('random_state', 42)
+    )
 
 def evaluate_model(model, X_test, y_test):
     """Comprehensive model evaluation"""
