@@ -3,88 +3,44 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
-*.so
+# Project-specific ignores
+/data/raw/
+/data/interim/
+/models/
+/mlruns/
+/mlartifacts/
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-venv/
+# Exceptions - keep these directories (empty placeholder files will be tracked)
+!/data/processed/
+!/data/processed/.gitkeep
+!/models/.gitkeep
+!/notebooks/
+!/notebooks/.gitkeep
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+# Keep all source code
+!/src/
+!/src/*.py
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+# Keep documentation and configs
+!*.md
+!LICENSE
+!README.md
+!OUTLINE
+!TIMELINE
+!requirements.txt
+!setup.py
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-*-testresults.xml
-test-output.xml
+# DVC files (track these)
+!.dvc/
+!data/.dvc
+!models/.dvc
 
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# celery beat schedule file
-celerybeat-schedule
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
+# IDE and environment files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .env
 .venv
 env/
@@ -94,18 +50,36 @@ env.bak/
 venv.bak/
 *.vscode
 condaenv.*
+pipenv
+Pipfile*
+poetry.lock
 
-# Spyder project settings
-.spyderproject
-.spyproject
+# Build and distribution files
+build/
+dist/
+*.egg-info/
+*.egg
+*.whl
 
-# Rope project settings
-.ropeproject
+# Logs and debug files
+*.log
+logs/
+debug/
 
-# mkdocs documentation
-/site
+# Test and coverage reports
+.coverage
+htmlcov/
+.pytest_cache/
+test-results.xml
 
-# mypy
-.mypy_cache/
+# Jupyter
+.ipynb_checkpoints/
 
+# OS-specific
 .DS_Store
+Thumbs.db
+
+# Python cache
+.mypy_cache/
+.python-version
+
