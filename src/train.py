@@ -1,9 +1,10 @@
 import mlflow
+import numpy as np
 import pandas as pd
 from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import (accuracy_score, f1_score, 
+from sklearn.metrics import (accuracy_score, f1_score, log_loss,
                            precision_score, recall_score, 
                            classification_report)
 from mlflow.models.signature import infer_signature
@@ -65,6 +66,13 @@ def load_and_validate_data():
     if len(data) < min_samples:
         logger.warning(f"Dataset has only {len(data)} samples (min {min_samples})")
     
+    class_counts = data[CONFIG['data']['target_col']].value_counts()
+    if len(class_counts) < 2:
+        raise ValueError(f"Need at least 2 classes, found {class_counts.index.tolist()}")
+    
+    if len(data) < CONFIG['data'].get('min_samples', 100):
+        logger.warning(f"Dataset small ({len(data)} samples)")
+    
     return train_test_split(
         data.drop(target_col, axis=1),
         data[target_col],
@@ -73,20 +81,34 @@ def load_and_validate_data():
     )
 
 def evaluate_model(model, X_test, y_test):
-    """Comprehensive model evaluation"""
     y_pred = model.predict(X_test)
-    y_proba = model.predict_proba(X_test)[:, 1] if hasattr(model, "predict_proba") else None
+    
+    if hasattr(model, "predict_proba"):
+        proba = model.predict_proba(X_test)
+        y_proba = proba[:, -1]
+    else:
+        y_proba = None
+    
+    report = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
     
     metrics = {
         "accuracy": accuracy_score(y_test, y_pred),
         "f1_score": f1_score(y_test, y_pred, average='weighted'),
         "precision": precision_score(y_test, y_pred, average='weighted'),
         "recall": recall_score(y_test, y_pred, average='weighted'),
-        "classification_report": classification_report(y_test, y_pred, output_dict=True)
+        "classification_report": report  # Keep the full report
     }
     
-    # Log class distribution
-    metrics["class_distribution"] = dict(pd.Series(y_test).value_counts())
+    class_metrics = {
+        f"class_{k}_{metric}": v 
+        for k, v in report.items() 
+        if isinstance(v, dict)
+        for metric, v in v.items()
+    }
+    metrics.update(class_metrics)
+    
+    if len(np.unique(y_test)) > 1 and y_proba is not None:
+        metrics["log_loss"] = log_loss(y_test, y_proba)
     
     return metrics, y_pred
 
@@ -223,11 +245,16 @@ def train_and_register():
             metrics, y_pred = evaluate_model(model, X_test, y_test)
             
             # Log metrics
-            mlflow.log_metrics(metrics)
-            mlflow.log_text(
-                json.dumps(metrics['classification_report'], indent=2),
-                "classification_report.json"
-            )
+            mlflow.log_metrics({
+                k: v for k, v in metrics.items() 
+                if not k.endswith('_report') and isinstance(v, (int, float))
+            })
+
+            if 'classification_report' in metrics:
+                mlflow.log_text(
+                    json.dumps(metrics['classification_report'], indent=2),
+                    "classification_report.json"
+                )
             
             # Log model
             signature = infer_signature(X_train, y_pred)
